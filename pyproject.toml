@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "media-organizer"
+version = "1.2.0"
+description = "Organize photos and videos by capture date without ever modifying the input folder"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["pillow>=9.0"]
+
+[project.optional-dependencies]
+heif = ["pillow-heif>=0.16"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+media-organizer = "media_organizer.cli:main"
+
+[tool.setuptools]
+packages = ["media_organizer"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
