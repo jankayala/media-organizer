@@ -97,7 +97,7 @@ class RunTests(OrganizerTestCase):
                 "summary.txt",
             ],
         )
-        self.assertIn("The input folder was not modified.", output)
+        self.assertIn("No original file was moved, renamed or deleted.", output)
 
     def test_report_matches_the_documented_layout(self) -> None:
         self.make_collection()
@@ -392,13 +392,56 @@ class SummaryTests(OrganizerTestCase):
 
 
 class CliTests(OrganizerTestCase):
-    def test_relative_output_paths_are_reported_relatively(self) -> None:
+    def test_default_output_folder_is_created_next_to_the_input_folder(self) -> None:
+        self.make_collection()
+        input_before = snapshot(self.input)
+
+        code, output = self.run_cli(str(self.input))
+
+        self.assertEqual(code, EXIT_OK)
+        sibling = self.base / "My Photos_output"
+        self.assertEqual(
+            tree(sibling),
+            [
+                "2023",
+                "2023/2023_08",
+                "2023/2023_08/20230821_104532.jpg",
+                "2024",
+                "2024/2024_07",
+                "2024/2024_07/20240714_163218.jpg",
+                "2024/2024_07/20240714_163219.jpg",
+                "summary.txt",
+            ],
+        )
+        self.assertEqual(snapshot(self.input), input_before)
+        self.assertFalse(self.base.joinpath("output").exists())
+        self.assertIn("My Photos_output/2024/2024_07/20240714_163218.jpg", output)
+
+    def test_rerunning_with_the_default_output_is_idempotent(self) -> None:
+        self.make_collection()
+
+        self.assertEqual(self.run_cli(str(self.input))[0], EXIT_OK)
+        code, output = self.run_cli(str(self.input))
+
+        self.assertEqual(code, EXIT_OK)
+        self.assertIn("3 file(s) were already up to date", output)
+
+    def test_relative_output_paths_stay_next_to_the_input_folder(self) -> None:
+        self.make_collection()
+
+        code, output = self.run_cli(str(self.input), "-o", "sorted")
+
+        self.assertEqual(code, EXIT_OK)
+        self.assertTrue((self.base / "sorted" / "2024").is_dir())
+        self.assertIn("sorted/2024/2024_07/20240714_163218.jpg", output)
+
+    def test_relative_paths_are_reported_relatively(self) -> None:
         self.make_collection()
 
         with _working_directory(self.base):
             _, output = self.run_cli("My Photos")
 
-        self.assertIn("output/2024/2024_07/20240714_163218.jpg", output)
+        self.assertIn("My Photos_output/2024/2024_07/20240714_163218.jpg", output)
         self.assertIn("Scanning: My Photos", output)
 
     def test_missing_input_folder_exits_with_an_error(self) -> None:

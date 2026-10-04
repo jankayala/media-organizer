@@ -1,7 +1,7 @@
 # Media Organizer
 
-Organizes photos and videos into `output/{year}/{year}_{month}/` by capture date,
-without ever modifying the input folder.
+Organizes photos and videos into a new folder **next to** the input folder, by
+capture date, without ever moving, renaming or deleting an original file.
 
 ```bash
 pip install .
@@ -11,7 +11,7 @@ media-organizer "./My Photos"
 ## 🚀 Usage
 
 Media Organizer needs no mode flag: every run scans the input folder, writes the
-organized files into `output/` and prints a report.
+organized files into `./My Photos_output/` and prints a report.
 
 ```bash
 python main.py "./My Photos"
@@ -27,16 +27,16 @@ Found 1,247 photos and 12 videos.
 Created files:
 
 IMG_4821.jpg
-  -> output/2024/2024_07/20240714_163218.jpg
+  -> My Photos_output/2024/2024_07/20240714_163218.jpg
 
 IMG_4822.jpg
-  -> output/2024/2024_07/20240714_170421_02.jpg
+  -> My Photos_output/2024/2024_07/20240714_170421_02.jpg
 
 VID_0001.mp4
-  -> output/2024/2024_07/20240714_183000.mp4
+  -> My Photos_output/2024/2024_07/20240714_183000.mp4
 
 vacation/DSC_1093.jpg
-  -> output/2023/2023_08/20230821_104532.jpg
+  -> My Photos_output/2023/2023_08/20230821_104532.jpg
 
 Location tags:
 
@@ -44,13 +44,13 @@ IMG_4821.jpg
   + Berlin
   + Germany
 
-Wrote 1,259 of 1,259 file(s) to output.
-The input folder was not modified.
-Summary written to output/summary.txt.
+Wrote 1,259 of 1,259 file(s) to My Photos_output.
+No original file was moved, renamed or deleted.
+Summary written to My Photos_output/summary.txt.
 ```
 
-**The input folder is never modified.** Instead, Media Organizer creates the
-organized media in the `output/` directory.
+**The output folder is created beside the input folder, never inside it**, so the
+input folder keeps exactly the files it had. Originals are copied, not touched.
 
 For example:
 
@@ -69,40 +69,31 @@ After running:
 python main.py "./My Photos"
 ```
 
-the input folder remains exactly as it was:
+the input folder is untouched and the result sits side by side with it:
 
 ```text
-My Photos/
-├── IMG_4821.jpg
-├── IMG_4822.jpg
-├── VID_0001.mp4
-└── vacation/
-    └── DSC_1093.jpg
+My Photos/                        My Photos_output/
+├── IMG_4821.jpg                  ├── 2023/
+├── IMG_4822.jpg                  │   └── 2023_08/
+├── VID_0001.mp4                  │       └── 20230821_104532.jpg
+└── vacation/                     ├── 2024/
+    └── DSC_1093.jpg              │   └── 2024_07/
+                                  │       ├── 20240714_163218.jpg
+                                  │       ├── 20240714_170421_02.jpg
+                                  │       └── 20240714_183000.mp4
+                                  └── summary.txt
 ```
 
-and the new output is created separately:
-
-```text
-output/
-├── 2023/
-│   └── 2023_08/
-│       └── 20230821_104532.jpg
-│
-├── 2024/
-│   └── 2024_07/
-│       ├── 20240714_163218.jpg
-│       ├── 20240714_170421_02.jpg
-│       └── 20240714_183000.mp4
-│
-└── summary.txt
-```
+Because the results live outside the input folder, re-running the same command
+never organizes its own output.
 
 ### Rules
 
-1. The input folder is read-only.
-2. Original files are never moved, renamed or deleted.
-3. The organized files are written to `output/`.
-4. Existing files in `output/` are never silently overwritten.
+1. The input folder is never modified: nothing is moved, renamed or deleted.
+2. The organized copies go to `<input>_output`, a folder next to the input.
+3. A relative `-o/--output` is resolved next to the input folder, not against the
+   current working directory; only an absolute path puts the output elsewhere.
+4. Existing files in the output folder are never silently overwritten.
 5. Required output directories are created automatically.
 6. Location tags can be written to the newly created output photos.
 
@@ -117,7 +108,7 @@ untouched.
 The default output structure is:
 
 ```text
-output/
+{input}_output/
 ├── summary.txt
 └── {year}/
     └── {year}_{month}/
@@ -127,7 +118,7 @@ output/
 For example:
 
 ```text
-output/
+My Photos_output/
 └── 2024/
     └── 2024_07/
         ├── 20240714_163218.jpg
@@ -152,9 +143,9 @@ timestamp (and extension) are numbered, starting at `_02`:
 
 The plain name counts as number 01, which is why the first duplicate is `_02`.
 
-Files whose plain name is already taken in `output/` by a file with different
-content also receive a counter, because existing files are never overwritten.
-If the existing file is byte-identical, it is reused as is.
+Files whose plain name is already taken in the output folder by a file with
+different content also receive a counter, because existing files are never
+overwritten. If the existing file is byte-identical, it is reused as is.
 
 A different extension is a different name, so a photo and a video that share a
 timestamp both keep a plain name:
@@ -182,13 +173,13 @@ tool can read without an external tool such as `ffprobe`.
 
 ## 📝 Summary File
 
-Every run writes `output/summary.txt` (configurable with `--summary-name`):
+Every run writes `{input}_output/summary.txt` (configurable with `--summary-name`):
 
 ```text
 Media organizer summary
 ============================================================
 input : My Photos
-output: output
+output: My Photos_output
 run   : 2026-10-03 21:02:43
 
 Found media
@@ -246,7 +237,7 @@ python main.py INPUT [-o OUTPUT] [--summary-name NAME] [--write-tags]
 
 | Option | Meaning |
 | --- | --- |
-| `-o`, `--output` | output folder, default `output` |
+| `-o`, `--output` | output folder; relative paths resolve next to the input folder, default `<input>_output` |
 | `--summary-name` | name of the summary file, default `summary.txt` |
 | `--write-tags` | also write the location tags into the new output photos |
 | `--on-conflict` | `bump` (default) adds a `_02` suffix, `skip` leaves the file out |
@@ -277,12 +268,12 @@ Exit codes: `0` success, `1` error, `2` usage error, `3` finished with failures.
                        │
                        ▼
                 ┌──────────────┐
-                │    output/   │  copy, never overwrite
-                │    summary   │
+                │ <input>_out  │  sibling folder, copy and never overwrite
+                │ summary      │
                 └──────────────┘
 ```
 
-At no point does the program modify the input folder.
+At no point does the program move, rename or delete an original file.
 
 ---
 

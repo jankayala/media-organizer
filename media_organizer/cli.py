@@ -11,11 +11,12 @@ from media_organizer import __version__
 from media_organizer.config import (
     DEFAULT_EXTENSIONS,
     DEFAULT_MAX_LOCATION_KM,
-    DEFAULT_OUTPUT_DIR,
+    DEFAULT_OUTPUT_DIR_SUFFIX,
     DEFAULT_SUMMARY_NAME,
     Config,
     ConflictPolicy,
     GeocoderMode,
+    resolve_output_dir,
 )
 from media_organizer.errors import OrganizerError
 from media_organizer.executor import execute_plan
@@ -60,8 +61,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="media-organizer",
         description=(
-            "Organize photos and videos into output/{year}/{year}_{month}/ "
-            "without ever modifying the input folder."
+            "Organize photos and videos into {input}"
+            f"{DEFAULT_OUTPUT_DIR_SUFFIX}/{{year}}/{{year}}_{{month}}/, "
+            "a folder next to the input folder, without ever modifying it."
         ),
     )
     parser.add_argument("input", help="input folder (opened read-only)")
@@ -72,8 +74,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-o",
         "--output",
-        default=DEFAULT_OUTPUT_DIR,
-        help=f"output folder (default: {DEFAULT_OUTPUT_DIR})",
+        default=None,
+        metavar="DIR",
+        help=(
+            "output folder; a relative path is resolved next to the input folder "
+            f"(default: <input>{DEFAULT_OUTPUT_DIR_SUFFIX})"
+        ),
     )
     parser.add_argument(
         "--summary-name",
@@ -141,7 +147,7 @@ def _config_from_args(args: argparse.Namespace) -> Config:
         raise OrganizerError("--summary-name must not be empty")
     return Config(
         input_dir=Path(args.input),
-        output_dir=Path(args.output),
+        output_dir=resolve_output_dir(Path(args.input), args.output),
         extensions=extensions,
         recursive=args.recursive,
         conflict_policy=ConflictPolicy(args.on_conflict),

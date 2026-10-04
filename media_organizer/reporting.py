@@ -155,7 +155,7 @@ def render_report(
         )
     if result.tagged:
         lines.append(f"Location tags written to {len(result.tagged):,} new file(s).")
-    lines.append("The input folder was not modified.")
+    lines.append("No original file was moved, renamed or deleted.")
     if summary_path is not None:
         lines.append(f"Summary written to {_posix(summary_path)}.")
     if result.failures:
